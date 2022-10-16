@@ -4,7 +4,7 @@ const { genMacs, genSingleIp } = require("../helpers/genMacAndIpv4");
 exports.getBase = async (req, res) => {
   const datos = await db.collection("gateways").get();
   const gateways = datos.docs.map((doc) => ({ idf: doc.id, ...doc.data() }));
-  res.json({ res: "success", gateways: gateways });
+  res.json({ res: "success", gateways: gateways, cantidad: gateways.length });
 };
 
 exports.getUserByUid = async (req, res) => {
@@ -26,7 +26,6 @@ exports.createGateway = async (req, res) => {
       const datosDb = await db.collection("gateways");
       const snapshot = await datosDb.where("uid", "==", uid).get();
       if (snapshot.size === 0) {
-          console.log("🚀 ~ file: gatewayControllers.js ~ line 28 ~ exports.createGateway= ~ snapshot", snapshot.size)
         const newGateway = {
           uid: uid,
           id: genMacs(),
@@ -35,11 +34,22 @@ exports.createGateway = async (req, res) => {
           devices: [],
           img: "",
         };
-        await db.collection("gateways").add(newGateway);
+        let test = await db
+          .collection("gateways")
+          .doc(newGateway.id)
+          .create(newGateway);
+        console.log(
+          "🚀 ~ file: gatewayControllers.js ~ line 38 ~ exports.createGateway= ~ test",
+          test
+        );
         return res.json({ status: true, gateway: newGateway });
       }
-      const gateway = snapshot.docs[0].data();
-      res.json({ status: true, gateway: gateway });
+      const gateway = snapshot.docs[0];
+      console.log(
+        "🚀 ~ file: gatewayControllers.js ~ line 41 ~ exports.createGateway= ~ gateway",
+        gateway
+      );
+      res.json({ status: true, gateway: gateway.data() });
     }
   } catch (error) {
     res.json({ status: false, error: error });
@@ -47,9 +57,18 @@ exports.createGateway = async (req, res) => {
 };
 
 exports.updateGateway = async (req, res) => {
-  const gateway = req.body.gateway;
+  const gateway = req.body;
+  console.log("🚀 ~ file: gatewayControllers.js ~ line 61 ~ exports.updateGateway= ~ gateway", gateway)
   //aqui se agrega en el admin el update
-  res.json({
-    status: true,
-  });
+  try {
+    await db.collection("gateways").doc(gateway.id).update(gateway);
+    res.json({
+      status: true,
+    });
+  } catch (error) {
+    res.json({
+      status: false,
+      error: error,
+    });
+  }
 };
