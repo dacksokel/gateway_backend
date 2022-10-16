@@ -3,7 +3,7 @@ const { genMacs, genSingleIp } = require("../helpers/genMacAndIpv4");
 
 exports.getBase = async (req, res) => {
   const datos = await db.collection("gateways").get();
-  const gateways = datos.docs.map((doc) => ({ ...doc.data() }));
+  const gateways = datos.docs.map((doc) => ({ idf: doc.id, ...doc.data() }));
   res.json({ res: "success", gateways: gateways });
 };
 
@@ -25,21 +25,26 @@ exports.createGateway = async (req, res) => {
     const datosDb = await db.collection("gateways").get();
     const gateways = datosDb.docs.map((doc) => ({ ...doc.data() }));
     const prefixIp = gateways.length;
-    if (datos.uid === uid) {
+    if (datos.uid === uid && gateways.length > 0) {
+      const gateway = datosDb.docs.find((doc) => doc.data().uid === uid);
+      res.json({
+        status: true,
+        gateway: gateway.data(),
+      });
+    } else {
       const newGateway = {
         uid: uid,
         id: genMacs(),
         name: "GatewayDefault",
         ipv4: genSingleIp(prefixIp),
         devices: [],
-        img:''
+        img: "",
       };
       await db.collection("gateways").add(newGateway);
       res.json({ status: true, gateway: newGateway });
     }
-    //   const userUid = datos.uid;
   } catch (error) {
-    res.json({ status: false });
+    res.json({ status: false, error: error });
   }
 };
 
