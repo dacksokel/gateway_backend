@@ -22,26 +22,24 @@ exports.createGateway = async (req, res) => {
   const uid = req.body.uid;
   try {
     const datos = await admin.auth().getUser(uid);
-    const datosDb = await db.collection("gateways").get();
-    const gateways = datosDb.docs.map((doc) => ({ ...doc.data() }));
-    const prefixIp = gateways.length;
-    if (datos.uid === uid && gateways.length > 0) {
-      const gateway = datosDb.docs.find((doc) => doc.data().uid === uid);
-      res.json({
-        status: true,
-        gateway: gateway.data(),
-      });
-    } else {
-      const newGateway = {
-        uid: uid,
-        id: genMacs(),
-        name: "GatewayDefault",
-        ipv4: genSingleIp(prefixIp),
-        devices: [],
-        img: "",
-      };
-      await db.collection("gateways").add(newGateway);
-      res.json({ status: true, gateway: newGateway });
+    if (datos) {
+      const datosDb = await db.collection("gateways");
+      const snapshot = await datosDb.where("uid", "==", uid).get();
+      if (snapshot.size === 0) {
+          console.log("🚀 ~ file: gatewayControllers.js ~ line 28 ~ exports.createGateway= ~ snapshot", snapshot.size)
+        const newGateway = {
+          uid: uid,
+          id: genMacs(),
+          name: "GatewayDefault",
+          ipv4: genSingleIp(0),
+          devices: [],
+          img: "",
+        };
+        await db.collection("gateways").add(newGateway);
+        return res.json({ status: true, gateway: newGateway });
+      }
+      const gateway = snapshot.docs[0].data();
+      res.json({ status: true, gateway: gateway });
     }
   } catch (error) {
     res.json({ status: false, error: error });
