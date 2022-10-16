@@ -79,19 +79,24 @@ exports.updateGateway = async (req, res) => {
     gateway
   );
   //aqui se agrega en el admin el update
-  try {
-    await db.collection("gateways").doc(gateway.id).update(gateway);
-    res.json({
-      status: true,
-    });
-  } catch (error) {
-    res.json({
-      status: false,
-      error: error,
-    });
-  }
+    const respuesta = await updateG(gateway);
+    console.log("🚀 ~ file: gatewayControllers.js ~ line 83 ~ exports.updateGateway= ~ respuesta", respuesta)
+    res.json({...respuesta})
 };
 
+const updateG = async (gateway) => {
+  try {
+    await db.collection("gateways").doc(gateway.id).update(gateway);
+    return {
+      status: true,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      error: error,
+    }
+  }
+};
 exports.uploadImagen = async (req, res, next) => {
   if (!req.file)
     return res.json({ status: false, error: "no hay ninguna imagen" });
@@ -112,11 +117,14 @@ exports.uploadImagen = async (req, res, next) => {
   stream.on("error", (e) => console.log(e));
   stream.on("finish", async () => {
     await file.makePublic();
-    imagen.firebaseUrl = `https>//storage.googleapis.com/${BucketUrl}/${nombreImagen}`;
-    
+    imagen.firebaseUrl = `https://storage.googleapis.com/${BucketUrl}/${nombreImagen}`;
+    console.log(
+      "🚀 ~ file: gatewayControllers.js ~ line 116 ~ stream.on ~ imagen",
+      imagen
+    );
+
     res.json({ status: true });
   });
   stream.end(imagen.buffer);
   console.log("imagen cargada correcatamente ", nombreImagen);
-
 };
