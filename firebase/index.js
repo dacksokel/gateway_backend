@@ -1,10 +1,14 @@
 const admin = require("firebase-admin");
-const { getFirestore, query, where } = require("firebase-admin/firestore");
+const { getFirestore } = require("firebase-admin/firestore");
+// const { getStorage, ref  } = require("firebase/storage");
 const serviceAccount = require("../serviceAccountKey.json");
 
+const BucketUrl = "prueba-dacksokel.appspot.com";
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://<DATABASE_NAME>.firebaseio.com",
+  databaseURL: "",
+  storageBucket: BucketUrl,
 });
 const db = getFirestore();
-module.exports = { admin, db, query, where };
+const bucket = admin.storage().bucket();
+module.exports = { admin, db, bucket, BucketUrl };
