@@ -1,7 +1,10 @@
-const admin = require("../firebase");
+const { admin, db } = require("../firebase");
 const { genMacs, genSingleIp } = require("../helpers/genMacAndIpv4");
+
 exports.getBase = async (req, res) => {
-  res.json({ res: "success" });
+  const datos = await db.collection("gateways").get();
+  const gateways = datos.docs.map((doc) => ({ ...doc.data() }));
+  res.json({ res: "success", gateways: gateways });
 };
 
 exports.getUserByUid = async (req, res) => {
@@ -19,14 +22,18 @@ exports.createGateway = async (req, res) => {
   const uid = req.body.uid;
   try {
     const datos = await admin.auth().getUser(uid);
+    const datosDb = await db.collection("gateways").get();
+    const gateways = datosDb.docs.map((doc) => ({ ...doc.data() }));
+    const prefixIp = gateways.length;
     if (datos.uid === uid) {
       const newGateway = {
         uid: uid,
         id: genMacs(),
         name: "GatewayDefault",
-        ipv4: genSingleIp(0),
+        ipv4: genSingleIp(prefixIp),
         devices: [],
       };
+      await db.collection("gateways").add(newGateway);
       res.json({ status: true, gateway: newGateway });
     }
     //   const userUid = datos.uid;
