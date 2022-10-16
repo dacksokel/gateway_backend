@@ -32,6 +32,7 @@ exports.createGateway = async (req, res) => {
         name: "GatewayDefault",
         ipv4: genSingleIp(prefixIp),
         devices: [],
+        img:''
       };
       await db.collection("gateways").add(newGateway);
       res.json({ status: true, gateway: newGateway });
@@ -41,6 +42,7 @@ exports.createGateway = async (req, res) => {
     res.json({ status: false });
   }
 };
+
 exports.updateGateway = async (req, res) => {
   const gateway = req.body.gateway;
   //aqui se agrega en el admin el update
