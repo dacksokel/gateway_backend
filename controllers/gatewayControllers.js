@@ -16,22 +16,23 @@ exports.getUserByUid = async (req, res) => {
 };
 
 exports.createGateway = async (req, res) => {
-    console.log("🚀 ~ file: gatewayControllers.js ~ line 20 ~ exports.createGateway= ~ req.body", req.body)
   const uid = req.body.uid;
-  console.log("🚀 ~ file: gatewayControllers.js ~ line 20 ~ exports.createGateway= ~ uid", uid)
-  const datos = await admin.auth().getUser(uid);
-  if (datos.uid === uid) {
-    const newGateway = {
-      uid: uid,
-      id: genMacs(),
-      name: "GatewayDefault",
-      ipv4: genSingleIp(0),
-      devices: [],
-    };
-    res.json({ status: true, gateway: newGateway });
+  try {
+    const datos = await admin.auth().getUser(uid);
+    if (datos.uid === uid) {
+      const newGateway = {
+        uid: uid,
+        id: genMacs(),
+        name: "GatewayDefault",
+        ipv4: genSingleIp(0),
+        devices: [],
+      };
+      res.json({ status: true, gateway: newGateway });
+    }
+    //   const userUid = datos.uid;
+  } catch (error) {
+    res.json({ status: false });
   }
-  //   const userUid = datos.uid;
-  res.json({ status: false });
 };
 exports.updateGateway = async (req, res) => {
   const gateway = req.body.gateway;
