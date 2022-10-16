@@ -24,7 +24,7 @@ exports.createGateway = async (req, res) => {
     const datos = await admin.auth().getUser(uid);
     if (datos) {
       const datosDb = await db.collection("gateways");
-      const snapshot = await datosDb.where("uid", "==", uid).get();
+      const snapshot = await datosDb.where("uid", "==", uid).get();    
       if (snapshot.size === 0) {
         const newGateway = {
           uid: uid,
