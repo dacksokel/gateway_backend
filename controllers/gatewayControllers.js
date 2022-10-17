@@ -83,21 +83,22 @@ exports.uploadImagen = async (req, res, next) => {
   const datosDb = await db.collection("gateways");
   const snapshot = await datosDb.where("uid", "==", uid).get();
   const gateway = snapshot.docs[0].data();
-  //   const imagen = req.file;
-  //   const nombreImagen = `${Date.now()}.${imagen.originalname.split(".")[1]}`;
+  const imagen = req.files["imagen"][0];
+  const nombreImagen = `${Date.now()}.${imagen.originalname.split(".")[1]}`;
 
-  //   const file = bucket.file(nombreImagen);
-  //   const stream = file.createWriteStream({
-  //     metadata: {
-  //       contentType: imagen.mimetype,
-  //     },
-  //   });
-  //   stream.on("error", (e) => console.log(e));
-  //   stream.on("finish", async () => {
-  //     await file.makePublic();
-  //     imagen.firebaseUrl = `https://storage.googleapis.com/${BucketUrl}/${nombreImagen}`;
-  //     res.json({ status: true });
-  //   });
-  //   stream.end(imagen.buffer);
-  //   console.log("imagen cargada correcatamente ", nombreImagen);
+  const file = bucket.file(nombreImagen);
+  const stream = file.createWriteStream({
+    metadata: {
+      contentType: imagen.mimetype,
+    },
+  });
+  stream.on("error", (e) => console.log(e));
+  stream.on("finish", async () => {
+    await file.makePublic();
+    imagen.firebaseUrl = `https://storage.googleapis.com/${BucketUrl}/${nombreImagen}`;
+    gateway.img = imagen.firebaseUrl;
+    res.json({ status: true, gateway:gateway });
+  });
+  stream.end(imagen.buffer);
+  console.log("imagen cargada correcatamente ", nombreImagen);
 };
