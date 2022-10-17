@@ -46,7 +46,7 @@ exports.getValidateUserByEmail = async (req, res) => {
     if (datos.providerData[0].providerId == "password") {
       res.json({
         status: true,
-        datos,
+        uid: datos.uid
       });
     }
     res.json({
@@ -68,11 +68,19 @@ exports.getValidateUserByEmail = async (req, res) => {
 };
 exports.updatePasswordUserByUid = async (req, res) => {
     let { uid, password } = req.body
-    await admin.auth().updateUser(uid, { password: password });
-    res.json({
-        status: true,
-        mensaje: 'Password cambiado exitosamente'
-    })
+    try {
+        await admin.auth().updateUser(uid, { password: password });
+        res.json({
+            status: true,
+            mensaje: 'Password cambiado exitosamente'
+        })
+        
+    } catch (error) {
+        res.json({
+          status: false,
+          mensaje: error,
+        });
+    }
  } 
 exports.createGateway = async (req, res) => {
   const uid = req.body.uid;
