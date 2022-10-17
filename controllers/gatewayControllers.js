@@ -16,13 +16,53 @@ exports.getBase = async (req, res) => {
 
 exports.getUserByUid = async (req, res) => {
   const uid = req.params.uid;
-
+  console.log("esta entrando aqui");
   const datos = await admin.auth().getUser(uid);
   const email = datos.email;
   res.json({
     email: email,
     datos: datos,
   });
+};
+
+exports.getUserByEmailApi = async (req, res) => {
+  const email = req.params.email;
+
+  try {
+    const datos = await admin.auth().getUserByEmail(email);
+    res.json({
+      datos: datos,
+    });
+  } catch (error) {
+    res.json({ status: false, error: error });
+  }
+};
+exports.getValidateUserByEmail = async (req, res) => {
+  const email = req.params.email;
+
+  try {
+    const datos = await admin.auth().getUserByEmail(email);
+    if (datos.providerData[0].providerId == "password") {
+      res.json({
+        status: true,
+      });
+    }
+    res.json({
+        status: false,
+        mensaje:'usuario creado por otro metodo que no es password'
+    });
+  } catch (error) {
+      if (error.code == "auth/user-not-found") { 
+          res.json({
+              status: false,
+              mensaje:'usuario no registrado'
+          });
+      }
+        console.log(
+          "🚀 ~ file: gatewayControllers.js ~ line 54 ~ exports.getValidateUserByEmail= ~ error",
+          error
+        );
+  }
 };
 
 exports.createGateway = async (req, res) => {
