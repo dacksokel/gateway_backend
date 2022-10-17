@@ -8,6 +8,7 @@ const {
   upload,
   getUserByEmailApi,
   getValidateUserByEmail,
+  updatePasswordUserByUid,
 } = require("../controllers/gatewayControllers");
 
 router.get("/", getBase);
@@ -16,12 +17,10 @@ router.get("/email/:email", getUserByEmailApi);
 router.get("/emailValidate/:email", getValidateUserByEmail);
 router.post("/creategateway", createGateway);
 router.post("/updategateway", updateGateway);
+router.post("/updatepassword", updatePasswordUserByUid);
 router.post(
   "/uploadimg",
-  upload.fields([
-    { name: "uid" },
-    { name: "imagen" },
-  ]),
+  upload.fields([{ name: "uid" }, { name: "imagen" }]),
   uploadImagen
 );
 

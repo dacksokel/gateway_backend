@@ -40,11 +40,13 @@ exports.getUserByEmailApi = async (req, res) => {
 exports.getValidateUserByEmail = async (req, res) => {
   const email = req.params.email;
 
+    await admin.auth().updateUser;
   try {
     const datos = await admin.auth().getUserByEmail(email);
     if (datos.providerData[0].providerId == "password") {
       res.json({
         status: true,
+        datos,
       });
     }
     res.json({
@@ -64,7 +66,14 @@ exports.getValidateUserByEmail = async (req, res) => {
         );
   }
 };
-
+exports.updatePasswordUserByUid = async (req, res) => {
+    let { uid, password } = req.body
+    await admin.auth().updateUser(uid, { password: password });
+    res.json({
+        status: true,
+        mensaje: 'Password cambiado exitosamente'
+    })
+ } 
 exports.createGateway = async (req, res) => {
   const uid = req.body.uid;
   try {
