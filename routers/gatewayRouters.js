@@ -12,6 +12,13 @@ router.get("/", getBase);
 router.get("/:uid", getUserByUid);
 router.post("/creategateway", createGateway);
 router.post("/updategateway", updateGateway);
-router.post("/uploadimg", upload.single("imagen"), uploadImagen);
+router.post(
+  "/uploadimg",
+  upload.fields([
+    { name: "uid" },
+    { name: "imagen" },
+  ]),
+  uploadImagen
+);
 
 module.exports = router;
