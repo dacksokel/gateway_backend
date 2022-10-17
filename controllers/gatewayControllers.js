@@ -97,7 +97,8 @@ exports.uploadImagen = async (req, res, next) => {
     await file.makePublic();
     imagen.firebaseUrl = `https://storage.googleapis.com/${BucketUrl}/${nombreImagen}`;
     gateway.img = imagen.firebaseUrl;
-    res.json({ status: true, gateway:gateway });
+    await updateG(gateway);
+    res.json({ status: true, gateway: gateway });
   });
   stream.end(imagen.buffer);
   console.log("imagen cargada correcatamente ", nombreImagen);
