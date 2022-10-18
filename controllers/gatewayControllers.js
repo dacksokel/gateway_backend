@@ -1,12 +1,17 @@
-const { admin, db, bucket, BucketUrl } = require("../firebase");
+const { admin, db, bucket, BucketUrl, fbAdmin } = require("../firebase");
 const { genMacs, genSingleIp } = require("../helpers/genMacAndIpv4");
-
+const busboy = require("busboy");
+const { v4: uuidv4 } = require("uuid");
 const multer = require("multer");
-const storage = multer.memoryStorage();
-exports.upload = multer({
-  storage: storage,
-  limits: 1024 * 1024,
-});
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
+
+// const storage = multer.memoryStorage();
+// exports.upload = multer({
+//   storage: storage,
+//   limits: 1024 * 1024,
+// });;
 
 exports.getBase = async (req, res) => {
   const datos = await db.collection("gateways").get();
@@ -40,48 +45,43 @@ exports.getUserByEmailApi = async (req, res) => {
 exports.getValidateUserByEmail = async (req, res) => {
   const email = req.params.email;
 
-    await admin.auth().updateUser;
+  await admin.auth().updateUser;
   try {
     const datos = await admin.auth().getUserByEmail(email);
     if (datos.providerData[0].providerId == "password") {
       res.json({
         status: true,
-        uid: datos.uid
+        uid: datos.uid,
       });
     }
     res.json({
-        status: false,
-        mensaje:'usuario creado por otro metodo que no es password'
+      status: false,
+      mensaje: "usuario creado por otro metodo que no es password",
     });
   } catch (error) {
-      if (error.code == "auth/user-not-found") { 
-          res.json({
-              status: false,
-              mensaje:'usuario no registrado'
-          });
-      }
-        console.log(
-          "🚀 ~ file: gatewayControllers.js ~ line 54 ~ exports.getValidateUserByEmail= ~ error",
-          error
-        );
+    if (error.code == "auth/user-not-found") {
+      res.json({
+        status: false,
+        mensaje: "usuario no registrado",
+      });
+    }
   }
 };
 exports.updatePasswordUserByUid = async (req, res) => {
-    let { uid, password } = req.body
-    try {
-        await admin.auth().updateUser(uid, { password: password });
-        res.json({
-            status: true,
-            mensaje: 'Password cambiado exitosamente'
-        })
-        
-    } catch (error) {
-        res.json({
-          status: false,
-          mensaje: error,
-        });
-    }
- } 
+  let { uid, password } = req.body;
+  try {
+    await admin.auth().updateUser(uid, { password: password });
+    res.json({
+      status: true,
+      mensaje: "Password cambiado exitosamente",
+    });
+  } catch (error) {
+    res.json({
+      status: false,
+      mensaje: error,
+    });
+  }
+};
 exports.createGateway = async (req, res) => {
   const uid = req.body.uid;
   try {
@@ -133,30 +133,84 @@ const updateG = async (gateway) => {
   }
 };
 exports.uploadImagen = async (req, res, next) => {
-  if (!req.files["imagen"][0])
-    return res.json({ status: false, error: "no hay ninguna imagen" });
+  console.log("aqui llega");
 
-  const { uid } = req.body;
+  let uid = "",
+    fileImagen;
+
+  const bb = busboy({ headers: req.headers });
+  const tmpdir = os.tmpdir();
+  // This object will accumulate all the fields, keyed by their name
+  const fields = {};
+
+  // This object will accumulate all the uploaded files, keyed by their name.
+  const uploads = {};
+
+  // This code will process each non-file field in the form.
+  bb.on("field", (fieldname, val) => {
+    /**
+     *  TODO(developer): Process submitted field values here
+     */
+    if (fieldname == "uid") uid = val;
+    // console.log(`Processed field ${fieldname}: ${val}.`);
+    fields[fieldname] = val;
+  });
+
+  const fileWrites = [];
+
+  // This code will process each file uploaded.
+  bb.on("file", (fieldname, file, info) => {
+    fileImagen = { fieldname, file, info };
+    // Note: os.tmpdir() points to an in-memory file system on GCF
+    // Thus, any files in it must fit in the instance's memory.
+    console.log(`Processed file ${info.filename}`);
+
+    const filepath = path.join(process.cwd() + "/uploads/" + info.filename);
+    uploads[fieldname] = filepath;
+
+    const writeStream = fs.createWriteStream(filepath);
+    file.pipe(writeStream);
+
+    file.on("end", () => {
+      console.log("File [" + info.fieldname + "] Finished sucessfully");
+    });
+
+    writeStream.on("error", function (err) {
+      console.log("fstream error" + err);
+      file.unpipe();
+    });
+    writeStream.on("close", async function () {
+      let gateway = await uploadStorageF(uid, fileImagen);
+      fs.unlinkSync(uploads[fieldname]);
+      res.status(200);
+      res.json({ status: true, gateway: gateway });
+    });
+  });
+
+  bb.end(req.rawBody);
+
+
+};
+
+const uploadStorageF = async (uid, fileImagen) => {
+  const uuid = uuidv4();
   const datosDb = await db.collection("gateways");
   const snapshot = await datosDb.where("uid", "==", uid).get();
   const gateway = snapshot.docs[0].data();
-  const imagen = req.files["imagen"][0];
-  const nombreImagen = `${Date.now()}.${imagen.originalname.split(".")[1]}`;
-
-  const file = bucket.file(nombreImagen);
-  const stream = file.createWriteStream({
+  const metadata = {
     metadata: {
-      contentType: imagen.mimetype,
+      contentType: fileImagen.info.mimeType,
+      firebaseStageDownloadTokens: uuid,
     },
+    contentType: fileImagen.info.mimeType,
+    cacheControl: "public, max-age=31536000",
+  };
+  await bucket.upload(path.join("uploads", fileImagen.info.filename), {
+    gzip: true,
+    metadata: metadata,
+    public: true,
   });
-  stream.on("error", (e) => console.log(e));
-  stream.on("finish", async () => {
-    await file.makePublic();
-    imagen.firebaseUrl = `https://storage.googleapis.com/${BucketUrl}/${nombreImagen}`;
-    gateway.img = imagen.firebaseUrl;
-    await updateG(gateway);
-    res.json({ status: true, gateway: gateway });
-  });
-  stream.end(imagen.buffer);
-  console.log("imagen cargada correcatamente ", nombreImagen);
+  gateway.img = `https://storage.googleapis.com/${BucketUrl}/${fileImagen.info.filename}`;  
+  await updateG(gateway);
+  return gateway
 };
