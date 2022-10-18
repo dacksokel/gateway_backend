@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const cors = require("cors")
 const {
   getBase,
   getUserByUid,
@@ -20,7 +21,7 @@ router.post("/updategateway", updateGateway);
 router.post("/updatepassword", updatePasswordUserByUid);
 router.post(
   "/uploadimg",
-  upload.fields([{ name: "uid" }, { name: "imagen" }]),
+  cors({ origin: "*", methods: "POST" }),
   uploadImagen
 );
 

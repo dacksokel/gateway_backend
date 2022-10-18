@@ -132,85 +132,87 @@ const updateG = async (gateway) => {
     };
   }
 };
-exports.uploadImagen = async (req, res, next) => {
-  console.log("aqui llega");
+/*** descartado por que para el functions de firebase no funciona si es un servidor normal si
+ 
+ */
+// exports.uploadImagen = async (req, res, next) => {
+//   console.log("aqui llega");
 
-  let uid = "",
-    fileImagen;
+//   let uid = "",
+//     fileImagen;
 
-  const bb = busboy({ headers: req.headers });
-  const tmpdir = os.tmpdir();
-  // This object will accumulate all the fields, keyed by their name
-  const fields = {};
+//   const bb = busboy({ headers: req.headers });
+//   const tmpdir = os.tmpdir();
+//   // This object will accumulate all the fields, keyed by their name
+//   const fields = {};
 
-  // This object will accumulate all the uploaded files, keyed by their name.
-  const uploads = {};
+//   // This object will accumulate all the uploaded files, keyed by their name.
+//   const uploads = {};
 
-  // This code will process each non-file field in the form.
-  bb.on("field", (fieldname, val) => {
-    /**
-     *  TODO(developer): Process submitted field values here
-     */
-    if (fieldname == "uid") uid = val;
-    // console.log(`Processed field ${fieldname}: ${val}.`);
-    fields[fieldname] = val;
-  });
+//   // This code will process each non-file field in the form.
+//   bb.on("field", (fieldname, val) => {
+//     /**
+//      *  TODO(developer): Process submitted field values here
+//      */
+//     if (fieldname == "uid") uid = val;
+//     // console.log(`Processed field ${fieldname}: ${val}.`);
+//     fields[fieldname] = val;
+//   });
 
-  const fileWrites = [];
+//   const fileWrites = [];
 
-  // This code will process each file uploaded.
-  bb.on("file", (fieldname, file, info) => {
-    fileImagen = { fieldname, file, info };
-    // Note: os.tmpdir() points to an in-memory file system on GCF
-    // Thus, any files in it must fit in the instance's memory.
-    console.log(`Processed file ${info.filename}`);
+//   // This code will process each file uploaded.
+//   bb.on("file", (fieldname, file, info) => {
+//     fileImagen = { fieldname, file, info };
+//     // Note: os.tmpdir() points to an in-memory file system on GCF
+//     // Thus, any files in it must fit in the instance's memory.
+//     console.log(`Processed file ${info.filename}`);
 
-    const filepath = path.join(process.cwd() + "/uploads/" + info.filename);
-    uploads[fieldname] = filepath;
+     // const filepath = path.join(process.cwd() + "/uploads/" + info.filename);
+//     uploads[fieldname] = filepath;
 
-    const writeStream = fs.createWriteStream(filepath);
-    file.pipe(writeStream);
+//     const writeStream = fs.createWriteStream(filepath);
+//     file.pipe(writeStream);
 
-    file.on("end", () => {
-      console.log("File [" + info.fieldname + "] Finished sucessfully");
-    });
+//     file.on("end", () => {
+//       console.log("File [" + fieldname + "] Finished sucessfully");
+//     });
 
-    writeStream.on("error", function (err) {
-      console.log("fstream error" + err);
-      file.unpipe();
-    });
-    writeStream.on("close", async function () {
-      let gateway = await uploadStorageF(uid, fileImagen);
-      fs.unlinkSync(uploads[fieldname]);
-      res.status(200);
-      res.json({ status: true, gateway: gateway });
-    });
-  });
+//     writeStream.on("error", function (err) {
+//       console.log("fstream error" + err);
+//       file.unpipe();
+//     });
+//     writeStream.on("close", async function () {
+//       let gateway = await uploadStorageF(uid, fileImagen, uploads);
+//       res.status(200);
+//       res.json({ status: true, gateway: gateway });
+//       // res.json({ status: true});
+//     });
+//   });
 
-  bb.end(req.rawBody);
+//   bb.end(req.rawBody);
+// };
 
+// const uploadStorageF = async (uid, fileImagen, uploads) => {
+//   const uuid = uuidv4();
+//   const datosDb = await db.collection("gateways");
+//   const snapshot = await datosDb.where("uid", "==", uid).get();
+//   const gateway = snapshot.docs[0].data();
+//   const metadata = {
+//     metadata: {
+//       contentType: fileImagen.info.mimeType,
+//       firebaseStageDownloadTokens: uuid,
+//     },
+//     contentType: fileImagen.info.mimeType,
+//     cacheControl: "public, max-age=31536000",
+//   };
+//   await bucket.upload(path.join("uploads", fileImagen.info.filename), {
+//     public: true,
+//   });
 
-};
+//   gateway.img = `https://storage.googleapis.com/${BucketUrl}/${fileImagen.info.filename}`;
+//   fs.unlinkSync(uploads[fileImagen.fieldname]);
 
-const uploadStorageF = async (uid, fileImagen) => {
-  const uuid = uuidv4();
-  const datosDb = await db.collection("gateways");
-  const snapshot = await datosDb.where("uid", "==", uid).get();
-  const gateway = snapshot.docs[0].data();
-  const metadata = {
-    metadata: {
-      contentType: fileImagen.info.mimeType,
-      firebaseStageDownloadTokens: uuid,
-    },
-    contentType: fileImagen.info.mimeType,
-    cacheControl: "public, max-age=31536000",
-  };
-  await bucket.upload(path.join("uploads", fileImagen.info.filename), {
-    gzip: true,
-    metadata: metadata,
-    public: true,
-  });
-  gateway.img = `https://storage.googleapis.com/${BucketUrl}/${fileImagen.info.filename}`;  
-  await updateG(gateway);
-  return gateway
-};
+//   await updateG(gateway);
+//   return gateway;
+// };
